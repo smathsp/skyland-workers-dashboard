@@ -73,9 +73,9 @@ async function cancel() {
 async function copyConfig() {
   try {
     await navigator.clipboard.writeText(pending.value.uri);
-    notice.value = '已复制 Bitwarden 配置。';
+    notice.value = '已复制验证器配置链接。';
   } catch {
-    notice.value = '剪贴板不可用，可以用 Bitwarden 扫码。';
+    notice.value = '剪贴板不可用，可用验证器扫码或手动输入密钥。';
   }
 }
 
@@ -90,7 +90,7 @@ onUnmounted(() => {
   <div class="mx-auto max-w-[52rem]">
     <div class="mb-6 sm:mb-7">
       <h1 id="security-heading" class="text-[1.9rem] leading-tight font-bold tracking-[-.045em] sm:text-[2.4rem]">登录安全</h1>
-      <p class="mt-1.5 text-sm text-muted">使用 Bitwarden 生成的动态验证码登录管理面板。</p>
+      <p class="mt-1.5 text-sm text-muted">使用支持 TOTP 的验证器生成动态验证码，登录管理面板。</p>
     </div>
     <section class="panel grid gap-4 p-4 sm:p-6" aria-labelledby="security-heading">
       <p v-if="error" role="alert" class="rounded-lg bg-alert-soft px-3 py-2.5 text-sm text-alert">{{ error }}</p>
@@ -107,25 +107,25 @@ onUnmounted(() => {
         </div>
       </div>
       <form v-else-if="!pending" class="grid max-w-sm gap-3" @submit.prevent="begin">
-        <p class="text-sm leading-relaxed text-muted">首次绑定时需要确认当前管理员密码。验证 Bitwarden 生成的验证码后，登录方式会切换为动态验证码。</p>
+        <p class="text-sm leading-relaxed text-muted">首次绑定时需要确认当前管理员密码。验证成功后，登录方式会切换为动态验证码。</p>
         <label for="security-password" class="text-sm font-semibold">当前管理员密码</label>
         <input id="security-password" v-model="password" class="field" type="password" autocomplete="current-password" maxlength="256" required>
         <button type="submit" class="btn btn-primary justify-self-start" :disabled="busy"><ShieldCheck :size="16" aria-hidden="true" />{{ busy ? '正在生成…' : '设置动态验证码' }}</button>
       </form>
       <div v-else class="grid gap-5 sm:grid-cols-[14rem_minmax(0,1fr)]">
         <div class="grid size-52 place-items-center rounded-xl border border-line bg-white sm:size-56">
-          <img :src="pending.qr" width="208" height="208" class="size-48 sm:size-52" alt="Bitwarden 动态验证码绑定二维码">
+          <img :src="pending.qr" width="208" height="208" class="size-48 sm:size-52" alt="用于绑定验证器的二维码">
         </div>
         <div class="grid min-w-0 content-start gap-3">
-          <p class="text-sm leading-relaxed text-muted">用 Bitwarden 扫码，或者复制配置到密码管理器的验证器密钥字段。请在 10 分钟内完成验证。</p>
-          <button type="button" class="btn btn-outline justify-self-start" @click="copyConfig"><Copy :size="16" aria-hidden="true" />复制 Bitwarden 配置</button>
+          <p class="text-sm leading-relaxed text-muted">打开验证器添加账号，扫描二维码。也可以复制配置链接或手动输入密钥。请在 10 分钟内完成验证。</p>
+          <button type="button" class="btn btn-outline justify-self-start" @click="copyConfig"><Copy :size="16" aria-hidden="true" />复制验证器配置链接</button>
           <details class="min-w-0 text-sm text-muted">
             <summary class="font-medium text-accent">查看手动输入的密钥</summary>
             <p class="mt-2 rounded-lg bg-canvas p-2 font-mono break-all select-all">{{ pending.seed }}</p>
             <p class="mt-1">SHA-1 · {{ pending.digits }} 位 · {{ pending.period }} 秒</p>
           </details>
           <form class="grid gap-2" @submit.prevent="confirm">
-            <label for="setup-code" class="text-sm font-semibold">Bitwarden 的 {{ pending.digits }} 位验证码</label>
+            <label for="setup-code" class="text-sm font-semibold">验证器显示的 {{ pending.digits }} 位验证码</label>
             <input id="setup-code" v-model="code" class="field font-mono tabular-nums" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="16" required>
             <div class="mt-1 flex flex-wrap gap-2">
               <button type="submit" class="btn btn-primary" :disabled="busy">{{ busy ? '正在验证…' : '验证并启用' }}</button>

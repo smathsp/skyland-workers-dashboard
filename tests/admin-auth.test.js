@@ -3,15 +3,16 @@ import { readFile } from 'node:fs/promises';
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { Miniflare } from 'miniflare';
 import worker from '../src/index.js';
+import { seal } from '../src/security.js';
 import { matchTotp, newSeed } from '../src/totp.js';
 
 const rfcSeed = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
 for (const [time, code] of [[59, '94287082'], [1111111109, '07081804'], [1111111111, '14050471'], [1234567890, '89005924'], [2000000000, '69279037'], [20000000000, '65353130']]) {
-  assert.equal(matchTotp(rfcSeed, code, time * 1000), Math.floor(time / 30));
+  assert.equal(matchTotp(rfcSeed, code, time * 1000, 8), Math.floor(time / 30));
 }
 assert.match(newSeed(), /^[A-Z2-7]{32}$/);
 
-function referenceCode(seed, now) {
+function referenceCode(seed, now, digits = 6) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   let packed = 0n;
   for (const char of seed) packed = (packed << 5n) | BigInt(alphabet.indexOf(char));
@@ -19,7 +20,7 @@ function referenceCode(seed, now) {
   const counter = Math.floor(now / 30_000).toString(16).padStart(16, '0');
   const digest = createHmac('sha1', key).update(Buffer.from(counter, 'hex')).digest();
   const position = digest[19] & 15;
-  return String((digest.readUInt32BE(position) & 0x7fffffff) % 100_000_000).padStart(8, '0');
+  return String((digest.readUInt32BE(position) & 0x7fffffff) % (10 ** digits)).padStart(digits, '0');
 }
 
 const emulator = new Miniflare({ workers: [{ config: {
@@ -56,6 +57,18 @@ function cookieFrom(response) {
 }
 
 try {
+  const legacySeed = newSeed();
+  const legacySecret = await seal(legacySeed, 'admin:totp', env);
+  await db.prepare('UPDATE admin_auth SET generation = 1, enabled_at = ?, totp_secret_enc = ? WHERE id = 1')
+    .bind(tick - 60_000, legacySecret).run();
+  const migration = await readFile(new URL('../migrations/0006_totp_digits.sql', import.meta.url), 'utf8');
+  await db.prepare(migration).run();
+  const legacyCode = referenceCode(legacySeed, tick, 8);
+  await payload(await send('/session', 'POST', undefined, { code: legacyCode.slice(-6) }), 400);
+  const legacyLogin = await send('/session', 'POST', undefined, { code: legacyCode });
+  assert.equal((await payload(legacyLogin)).mode, 'totp');
+  assert.equal((await payload(await send('/auth/totp', 'GET', cookieFrom(legacyLogin)))).digits, 8);
+  await db.prepare('UPDATE admin_auth SET totp_secret_enc = NULL, generation = 0, enabled_at = NULL, last_step = -1 WHERE id = 1').run();
   assert.deepEqual(await payload(await send('/session')), { authenticated: false, mode: 'password' });
   await payload(await send('/auth/totp/setup', 'POST', undefined, { password: env.ADMIN_PASSWORD }), 401);
   const value = `${randomUUID()}.${tick + 3_600_000}`;
@@ -74,8 +87,9 @@ try {
   const uri = new URL(first.uri);
   assert.equal(uri.protocol, 'otpauth:');
   assert.equal(uri.searchParams.get('secret'), first.seed);
-  assert.equal(uri.searchParams.get('digits'), '8');
+  assert.equal(uri.searchParams.get('digits'), '6');
   assert.equal(uri.searchParams.get('period'), '30');
+  assert.equal(uri.searchParams.get('algorithm'), 'SHA1');
   const row = await db.prepare('SELECT pending_secret_enc FROM admin_auth WHERE id = 1').first();
   assert(!row.pending_secret_enc.includes(first.seed));
   const confirm = (setup, cookie = original) => send('/auth/totp/confirm', 'POST', cookie, { id: setup.id, code: referenceCode(setup.seed, tick) });
@@ -87,13 +101,12 @@ try {
   await payload(await confirm(expired), 409);
 
   const setup = await payload(await creation(), 201);
-  let bad = '88888888';
   const timeCodes = [-30_000, 0, 30_000].map(offset => referenceCode(setup.seed, tick + offset));
-  if (timeCodes.includes(bad)) bad = '77777777';
+  const bad = ['888888', '777777', '666666', '555555'].find(value => !timeCodes.includes(value));
   await payload(await send('/auth/totp/confirm', 'POST', original, { id: setup.id, code: bad }), 422);
   const promoted = await confirm(setup);
   const current = cookieFrom(promoted);
-  assert.deepEqual(await payload(promoted), { enabled: true, enabled_at: tick, digits: 8, period: 30 });
+  assert.deepEqual(await payload(promoted), { enabled: true, enabled_at: tick, digits: 6, period: 30 });
   await payload(await send('/dashboard', 'GET', original), 401);
   assert.deepEqual(await payload(await send('/session', 'GET', current)), { authenticated: true, mode: 'totp' });
   assert.deepEqual(await payload(await send('/session', 'GET', other)), { authenticated: false, mode: 'totp' });
@@ -112,7 +125,7 @@ try {
   const nextSession = cookieFrom(simultaneous.find(r => r.status === 200));
   const invalid = (() => {
     const candidates = [-30_000, 0, 30_000].map(d => referenceCode(setup.seed, tick + d));
-    return ['00000000', '11111111', '22222222', '33333333'].find(c => !candidates.includes(c));
+    return ['000000', '111111', '222222', '333333'].find(c => !candidates.includes(c));
   })();
   const failures = await Promise.all(Array.from({ length: 7 }, (_, index) => send('/session', 'POST', undefined, { code: invalid }, origin, `192.0.2.${10 + index}`)));
   assert(failures.filter(r => r.status === 429).length >= 2);

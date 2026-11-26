@@ -12,7 +12,7 @@ const emulator = new Miniflare({ workers: [{ config: {
   } } },
 } }] });
 const db = await emulator.getD1Database('DB');
-for (const migration of ['0001_initial', '0002_notifications', '0003_schedule_and_channels', '0004_admin_totp', '0005_schedule_index']) {
+for (const migration of ['0001_initial', '0002_notifications', '0003_schedule_and_channels', '0004_admin_totp', '0005_schedule_index', '0006_totp_digits']) {
   const sql = await readFile(new URL(`../migrations/${migration}.sql`, import.meta.url), 'utf8');
   if (migration === '0003_schedule_and_channels') {
     await db.prepare("INSERT INTO notification_settings (provider, secret_enc, enabled, result_mode, include_manual, revision, last_at, last_status, last_message, last_kind) VALUES ('qmsg', 'legacy-ciphertext', 1, 'failures', 0, 'legacy', 5, 'accepted', 'legacy-result', 'test')").run();

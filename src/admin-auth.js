@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { seal, unseal } from './security.js';
-import { digits, matchTotp, newSeed, normalizeCode, periodSeconds, setupUri } from './totp.js';
+import { enrollmentDigits, matchTotp, newSeed, normalizeCode, periodSeconds, setupUri } from './totp.js';
 
 const lifetime = 10 * 60_000;
 const setupAttempts = 5;
@@ -18,17 +18,17 @@ export class AuthError extends Error {
 }
 
 export function readAuth(db) {
-  return db.prepare('SELECT generation, totp_secret_enc IS NOT NULL AS totp_enabled, enabled_at FROM admin_auth WHERE id = 1').first();
+  return db.prepare('SELECT generation, totp_secret_enc IS NOT NULL AS totp_enabled, enabled_at, totp_digits FROM admin_auth WHERE id = 1').first();
 }
 
 export const loginMode = auth => auth.totp_enabled ? 'totp' : 'password';
 
 export function authSettings(auth) {
-  return { enabled: loginMode(auth) === 'totp', enabled_at: auth.enabled_at, digits, period: periodSeconds };
+  return { enabled: loginMode(auth) === 'totp', enabled_at: auth.enabled_at, digits: auth.totp_enabled ? auth.totp_digits : enrollmentDigits, period: periodSeconds };
 }
 
-function formattedCode(input) {
-  const code = normalizeCode(input);
+function formattedCode(input, digits) {
+  const code = normalizeCode(input, digits);
   if (!code) throw new AuthError(400, `请输入 ${digits} 位动态验证码。`);
   return code;
 }
@@ -44,10 +44,10 @@ export async function startTotpSetup(env, auth, owner, hostname) {
   const expiresAt = at + lifetime;
   const secret = await seal(seed, pendingScope(owner, id), env);
   const updated = await env.DB.prepare(`UPDATE admin_auth SET pending_id = ?, pending_owner = ?, pending_secret_enc = ?,
-    pending_expires_at = ?, pending_attempts = 0 WHERE id = 1 AND generation = ? AND totp_secret_enc IS NULL`)
-    .bind(id, owner, secret, expiresAt, auth.generation).run();
+    pending_expires_at = ?, totp_digits = ?, pending_attempts = 0 WHERE id = 1 AND generation = ? AND totp_secret_enc IS NULL`)
+    .bind(id, owner, secret, expiresAt, enrollmentDigits, auth.generation).run();
   if (!updated.meta.changes) throw new AuthError(409, '登录方式已变化，请刷新页面。');
-  return { id, seed, uri, qr, expires_at: expiresAt, digits, period: periodSeconds };
+  return { id, seed, uri, qr, expires_at: expiresAt, digits: enrollmentDigits, period: periodSeconds };
 }
 
 export async function cancelTotpSetup(db, owner, id) {
@@ -57,7 +57,7 @@ export async function cancelTotpSetup(db, owner, id) {
 }
 
 export async function confirmTotpSetup(env, auth, owner, id, input) {
-  const code = formattedCode(input);
+  const code = formattedCode(input, auth.totp_digits);
   const at = Date.now();
   const pending = await env.DB.prepare(`UPDATE admin_auth SET pending_attempts = pending_attempts + 1
     WHERE id = 1 AND generation = ? AND totp_secret_enc IS NULL AND pending_owner = ? AND pending_id = ?
@@ -65,21 +65,21 @@ export async function confirmTotpSetup(env, auth, owner, id, input) {
     .bind(auth.generation, owner, id, at, setupAttempts).first();
   if (!pending) throw new AuthError(409, '绑定已失效或验证次数用完，请重新生成二维码。');
   const seed = await unseal(pending.pending_secret_enc, pendingScope(owner, id), env);
-  const step = matchTotp(seed, code, at);
-  if (step === null) throw new AuthError(422, '验证码不正确，请用 Bitwarden 生成的新验证码重试。');
+  const step = matchTotp(seed, code, at, auth.totp_digits);
+  if (step === null) throw new AuthError(422, '验证码不正确，请用验证器生成的新验证码重试。');
   const secret = await seal(seed, activeScope, env);
   const promoted = await env.DB.prepare(`UPDATE admin_auth SET generation = generation + 1, totp_secret_enc = ?,
     enabled_at = ?, last_step = ?, short_window = -1, short_attempts = 0, day_window = -1, day_attempts = 0,
     pending_id = NULL, pending_owner = NULL, pending_secret_enc = NULL, pending_expires_at = 0, pending_attempts = 0
     WHERE id = 1 AND generation = ? AND totp_secret_enc IS NULL AND pending_owner = ? AND pending_id = ? AND pending_expires_at > ?
-    RETURNING generation, totp_secret_enc IS NOT NULL AS totp_enabled, enabled_at`)
+    RETURNING generation, totp_secret_enc IS NOT NULL AS totp_enabled, enabled_at, totp_digits`)
     .bind(secret, at, step, auth.generation, owner, id, Date.now()).first();
   if (!promoted) throw new AuthError(409, '绑定已失效，请刷新页面后重试。');
   return promoted;
 }
 
 export async function verifyTotpLogin(env, auth, input) {
-  const code = formattedCode(input);
+  const code = formattedCode(input, auth.totp_digits);
   const at = Date.now();
   const bucket = Math.floor(at / shortWindow);
   const day = Math.floor(at / 86_400_000);
@@ -91,8 +91,8 @@ export async function verifyTotpLogin(env, auth, input) {
     .bind(bucket, bucket, day, day, auth.generation, bucket, shortLimit, day, dayLimit).first();
   if (!reserved) throw new AuthError(429, '验证码尝试次数过多，请稍后重试。');
   const seed = await unseal(reserved.totp_secret_enc, activeScope, env);
-  const step = matchTotp(seed, code, at);
-  if (step === null) throw new AuthError(401, '验证码不正确，请检查 Bitwarden 中当前显示的 8 位验证码。');
+  const step = matchTotp(seed, code, at, auth.totp_digits);
+  if (step === null) throw new AuthError(401, '验证码不正确，请检查验证器当前显示的动态验证码。');
   const updated = await env.DB.prepare(`UPDATE admin_auth SET last_step = ?, short_attempts = 0, day_attempts = 0
     WHERE id = 1 AND generation = ? AND last_step < ?`).bind(step, auth.generation, step).run();
   if (!updated.meta.changes) throw new AuthError(401, '该验证码已使用，请等待下一组验证码。');

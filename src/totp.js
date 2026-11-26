@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-export const digits = 8;
+export const enrollmentDigits = 6;
 export const periodSeconds = 30;
 
 export function newSeed() {
@@ -36,13 +36,13 @@ function seedBytes(seed) {
   return result;
 }
 
-export function normalizeCode(input) {
+export function normalizeCode(input, digits) {
   if (typeof input !== 'string' || input.length > 24) return '';
   const stripped = input.replace(/\s/g, '');
-  return /^\d{8}$/.test(stripped) ? stripped : '';
+  return stripped.length === digits && /^\d+$/.test(stripped) ? stripped : '';
 }
 
-function generateCode(key, step) {
+function generateCode(key, step, digits) {
   const message = Buffer.alloc(8);
   message.writeBigUInt64BE(BigInt(step));
   const digest = createHmac('sha1', key).update(message).digest();
@@ -51,14 +51,14 @@ function generateCode(key, step) {
   return String(value).padStart(digits, '0');
 }
 
-export function matchTotp(seed, code, now = Date.now()) {
+export function matchTotp(seed, code, now, digits) {
   const key = seedBytes(seed);
   const entered = Buffer.from(code);
   const step = Math.floor(now / (periodSeconds * 1000));
   let matched = null;
   for (const candidate of [step - 1, step, step + 1]) {
     if (candidate < 0) continue;
-    const expected = Buffer.from(generateCode(key, candidate));
+    const expected = Buffer.from(generateCode(key, candidate, digits));
     if (entered.length === expected.length && timingSafeEqual(entered, expected)) matched = candidate;
   }
   return matched;
@@ -67,6 +67,6 @@ export function matchTotp(seed, code, now = Date.now()) {
 export function setupUri(seed, hostname) {
   const issuer = 'Skyland Sign';
   const label = `${encodeURIComponent(issuer)}:${encodeURIComponent(`admin@${hostname}`)}`;
-  const parameters = new URLSearchParams({ secret: seed, issuer, algorithm: 'SHA1', digits: String(digits), period: String(periodSeconds) });
+  const parameters = new URLSearchParams({ secret: seed, issuer, algorithm: 'SHA1', digits: String(enrollmentDigits), period: String(periodSeconds) });
   return `otpauth://totp/${label}?${parameters}`;
 }

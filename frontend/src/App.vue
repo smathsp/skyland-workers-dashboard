@@ -195,7 +195,7 @@ onUnmounted(() => document.removeEventListener('visibilitychange', refreshOnRetu
           <template v-if="mode === 'totp'">
             <label for="admin-code" class="text-sm font-semibold">动态验证码</label>
             <input id="admin-code" v-model="credential" class="field font-mono tabular-nums" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="16" required>
-            <p class="text-sm text-muted">输入 Bitwarden 当前显示的 8 位验证码。</p>
+            <p class="text-sm text-muted">输入验证器当前显示的动态验证码。</p>
           </template>
           <template v-else>
             <label for="admin-password" class="text-sm font-semibold">管理员密码</label>

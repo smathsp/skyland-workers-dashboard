@@ -2,7 +2,7 @@
 
 适用于个人自托管。首次用部署时设置的管理员密码进入面板。点击「扫码添加账号」，用森空岛 App 扫码并确认。面板会自动同步该账号下的《明日方舟》和《明日方舟：终末地》角色。已授权账号可以立即签到、暂停或恢复自动签到、修改备注和查看签到结果。
 
-面板支持使用 Bitwarden 动态验证码登录。森空岛账号的授权在官方 App 内完成。授权到期时，使用同一个森空岛账号重新扫码即可更新原账号，继续使用已有备注和记录。
+面板支持使用 TOTP 动态验证码登录。森空岛账号的授权在官方 App 内完成。授权到期时，使用同一个森空岛账号重新扫码即可更新原账号，继续使用已有备注和记录。
 
 ## 可分享的一键部署模板
 
@@ -37,11 +37,13 @@
 
 更新已有部署时，先运行 `npx wrangler d1 migrations apply DB --remote`，然后运行 `npm run deploy`，继续使用已有的 D1 和线上 Secrets。使用自定义生产配置时，两条命令都带上同一个 `--config` 参数。
 
-## Bitwarden 动态验证码登录
+## 动态验证码登录
 
-在面板打开「登录安全」，用当前管理员密码确认一次，生成二维码。用 Bitwarden Authenticator 扫码，或把「复制 Bitwarden 配置」得到的完整 `otpauth://` URI 粘贴到 Bitwarden 密码管理器的验证器密钥字段。手动录入独立密钥时，选择 SHA-1、8 位、30 秒。[Bitwarden Authenticator](https://bitwarden.com/help/bitwarden-authenticator/) · [Bitwarden 内置验证器](https://bitwarden.com/help/integrated-authenticator/)
+1. 打开「登录安全」，用当前管理员密码确认。在支持 TOTP 的验证器中添加账号并扫码，也可以导入「复制验证器配置链接」得到的 `otpauth://` 链接。
+2. 手动添加时，选择基于时间的验证码。新绑定使用 **SHA-1、6 位、30 秒**。输入验证器显示的验证码，点击「验证并启用」。
+3. 此后用动态验证码登录。每组验证码只能使用一次，刚完成绑定时请等待下一组再测试登录。
 
-输入应用生成的 8 位验证码，点击「验证并启用」。绑定成功后，登录页只接受动态验证码，当前浏览器会收到新的登录会话。旧会话失效。每组验证码可使用一次，刚完成绑定时如需立刻重新登录，请等待下一组。
+升级前已启用的 **8 位**绑定继续有效，无需重新扫码。
 
 如无法访问原验证器，部署者可通过 Cloudflare D1 控制台重置管理员登录方式。先在 Worker 配置一个临时的 `ADMIN_PASSWORD`，再在生产 D1 控制台执行以下 SQL，随后登录面板重新绑定。
 
@@ -88,7 +90,7 @@ D1 中的推送凭证使用 Worker Secret 加密。推送是否被服务商受�
 - 感谢 **YueHen14/skyland-auto-sign** 的维护者和贡献者。该 Python 实现整理了两款游戏的角色解析、签到请求、奖励解析，并提供 Server 酱³、PushPlus 和 Qmsg 的实现参考。[上游参考版本](https://github.com/YueHen14/skyland-auto-sign/tree/b0358f15806cd24f17253796a2826789f309a6f0) · [贡献者](https://github.com/YueHen14/skyland-auto-sign/graphs/contributors)
 - 上游仓库介绍注明源自 **FancyCabbage/skyland-auto-sign**。本仓库保留上游 MIT 许可全文及原署名 **Copyright (c) 2023 xxyz30**。[Gitee 项目](https://gitee.com/FancyCabbage/skyland-auto-sign) · [许可证](LICENSE)
 - **ikexing-cn/skland-bot** 的资料提供了扫码授权流程参考。**xiaoyulejia/skyland-auto-sign-CFworker** 提供了 Workers 部署参考。各参考项目的许可应以各自仓库为准。[扫码项目](https://github.com/ikexing-cn/skland-bot) · [Workers 参考项目](https://github.com/xiaoyulejia/skyland-auto-sign-CFworker)
-- 本仓库的适配工作包括 Workers 和 D1 存储、Vue 管理面板、可配置的定时与九个推送渠道、Bitwarden 动态验证码和集成测试。
+- 本仓库的适配工作包括 Workers 和 D1 存储、Vue 管理面板、可配置的定时与九个推送渠道、动态验证码登录和集成测试。
 
 - [Cloudflare Workers Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
 - [Cloudflare D1 Worker API](https://developers.cloudflare.com/d1/worker-api/)
