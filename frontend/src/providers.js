@@ -1,0 +1,16 @@
+export const providerInfo = [
+  { id: 'serverchan', name: 'Server 酱³', destination: 'Server 酱 App', key: 'SendKey', guide: 'https://sc3.ft07.com/doc', mark: 'S', color: 'violet' },
+  { id: 'pushplus', name: 'PushPlus', destination: '微信', key: 'Token', guide: 'https://www.pushplus.plus/doc/', mark: 'P', color: 'green' },
+  { id: 'qmsg', name: 'Qmsg', destination: 'QQ 私聊', key: 'API Key', guide: 'https://qmsg.zendee.cn/docs', mark: 'Q', color: 'blue' },
+  { id: 'telegram', name: 'Telegram', destination: '私聊 / 群组 / 频道', key: 'Bot Token', guide: 'https://core.telegram.org/bots/tutorial', mark: 'T', color: 'blue',
+    extra: { label: 'Chat ID', placeholder: '数字 ID 或公开频道的 @用户名', required: true }, hint: '私聊接收前，先在 Telegram 打开机器人并发送 /start。' },
+  { id: 'bark', name: 'Bark', destination: 'iPhone 推送', key: '设备 Key', guide: 'https://day.app/', mark: 'B', color: 'violet',
+    hint: '可以粘贴设备 Key 或 App 中 api.day.app 的设备地址。' },
+  { id: 'wecom', name: '企业微信', destination: '企业微信群机器人', key: 'Webhook', guide: 'https://developer.work.weixin.qq.com/document/path/91770', mark: '企', color: 'green',
+    hint: '从企业微信群聊的机器人设置复制 Webhook。' },
+  { id: 'feishu', name: '飞书 / Lark', destination: '群自定义机器人', key: 'Webhook', guide: 'https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot', mark: '飞', color: 'blue',
+    extra: { label: '签名密钥', placeholder: '启用签名校验时填写', required: false }, hint: '如果使用关键词校验，可以在机器人设置中加上「森空岛签到」。' },
+  { id: 'discord', name: 'Discord', destination: '频道 Webhook', key: 'Webhook', guide: 'https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks', mark: 'D', color: 'violet' },
+  { id: 'pushover', name: 'Pushover', destination: 'Pushover App', key: '应用 API Token', guide: 'https://pushover.net/api', mark: 'P', color: 'green',
+    extra: { label: 'User Key', placeholder: '接收账号的 User Key', required: true } },
+];

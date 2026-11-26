@@ -1,0 +1,26 @@
+name = "skyland-workers-dashboard"
+main = "src/index.js"
+compatibility_date = "2026-11-25"
+compatibility_flags = ["nodejs_compat"]
+preview_urls = false
+minify = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "skyland-accounts"
+# 首次部署时替换为自己的 D1 database_id。
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[ratelimits]]
+name = "LOGIN_LIMIT"
+namespace_id = "198301"
+simple = { limit = 8, period = 60 }
+
+[triggers]
+# 每分钟检查 D1 保存的签到时间。
+crons = ["* * * * *"]

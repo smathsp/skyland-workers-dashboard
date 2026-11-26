@@ -1,0 +1,29 @@
+{
+  "name": "skyland-workers-dashboard",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  },
+  "scripts": {
+    "dev": "npm run build && wrangler dev",
+    "check": "node --check src/index.js && node --check src/skland.js && node --check src/security.js && node --check src/notifications.js && node --check src/notification-providers.js && node --check src/schedule.js && node --check src/totp.js && node --check src/admin-auth.js && npm run build",
+    "deploy": "npm run build && wrangler deploy",
+    "build": "vite build",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@lucide/vue": "1.80.0",
+    "qrcode": "1.5.4",
+    "vue": "3.5.46"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.5",
+    "@vitejs/plugin-vue": "6.0.11",
+    "tailwindcss": "4.3.5",
+    "vite": "8.3.8",
+    "wrangler": "4.168.0",
+    "miniflare": "5.20261123.1-beta"
+  }
+}

@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', 'PingFang SC', 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif;
+  --color-canvas: #f5f7fb;
+  --color-ink: #142037;
+  --color-muted: #51607a;
+  --color-line: #e3e9f3;
+  --color-accent: #254ccb;
+  --color-accent-dark: #1939a3;
+  --color-accent-soft: #edf2ff;
+  --color-positive: #176548;
+  --color-positive-soft: #e9f6ef;
+  --color-alert: #963927;
+  --color-alert-soft: #fff0e9;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  body { @apply min-h-screen min-w-0 bg-canvas font-sans text-base text-ink antialiased; }
+  button:not(:disabled), summary { cursor: pointer; }
+  :focus-visible { @apply outline-2 outline-offset-3 outline-accent; }
+  dialog { @apply m-auto max-h-[calc(100dvh-2rem)] overflow-auto rounded-2xl border border-line bg-white p-0 text-ink shadow-2xl; }
+  dialog::backdrop { background: rgb(15 26 47 / 50%); }
+}
+
+@layer components {
+  .shell { @apply mx-auto w-full max-w-[77rem] px-4 sm:px-7 lg:px-10; }
+  .panel { @apply rounded-2xl border border-line bg-white shadow-[0_2px_10px_#1a315505]; }
+  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-[.65rem] border border-transparent px-3.5 py-2 text-sm font-semibold leading-tight transition-colors disabled:cursor-wait disabled:opacity-55; }
+  .btn-primary { @apply border-accent bg-accent text-white hover:border-accent-dark hover:bg-accent-dark; }
+  .btn-outline { @apply border-line bg-white text-ink hover:bg-canvas; }
+  .btn-quiet { @apply text-muted hover:bg-canvas hover:text-ink; }
+  .btn-danger { @apply text-alert hover:bg-alert-soft; }
+  .field { @apply min-h-11 w-full rounded-[.65rem] border border-[#ccd6e7] bg-white px-3 py-2.5 leading-snug text-ink placeholder:text-slate-500; }
+  .tag { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium leading-tight; }
+  .tag-ok { @apply bg-positive-soft text-positive; }
+  .tag-muted { @apply bg-[#eef1f6] text-muted; }
+  .tag-alert { @apply bg-alert-soft text-alert; }
+}
