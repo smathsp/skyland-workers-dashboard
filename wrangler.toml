@@ -13,7 +13,7 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "skyland-accounts"
-# 首次部署时替换为自己的 D1 database_id。
+# 部署按钮会填入新 D1 的 ID。使用命令行部署时手动替换。
 database_id = "00000000-0000-0000-0000-000000000000"
 
 [[ratelimits]]

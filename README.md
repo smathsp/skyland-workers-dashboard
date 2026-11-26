@@ -1,14 +1,24 @@
 # 森空岛签到管理 · Cloudflare Workers
 
-适用于个人自托管。首次用部署时设置的管理员密码进入面板。点击「扫码添加账号」，用森空岛 App 扫码并确认。面板会自动同步该账号下的《明日方舟》和《明日方舟：终末地》角色。已授权账号可以立即签到、暂停或恢复自动签到、修改备注和查看签到结果。
+在自己的 Cloudflare 账号部署后，用森空岛 App 扫码授权，即可同步《明日方舟》和《明日方舟：终末地》的角色，手动或定时签到，并将结果推送到你选择的渠道。
 
-面板支持使用 TOTP 动态验证码登录。森空岛账号的授权在官方 App 内完成。授权到期时，使用同一个森空岛账号重新扫码即可更新原账号，继续使用已有备注和记录。
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/smathsp/skyland-workers-dashboard)
 
-## 可分享的一键部署模板
+## 一键部署
 
-用于公开分享的版本使用虚构角色演示签到，保留动态验证码、D1、定时和推送。部署按钮和完整教程见[公开模板 README](https://github.com/smathsp/skyland-workers-template#readme)。本私有版本涉及真实账号接入，使用时请核对适用的平台协议和授权范围。[森空岛使用许可及服务协议](https://assets.skland.com/protocols/agreement.html)
+1. 点击上方按钮，登录 Cloudflare，按提示连接 GitHub 或 GitLab，选择保存项目副本的位置和 Worker 名称。
+2. 为 `DB` 选择新建 D1 数据库。保留构建命令 `npm run build` 和部署命令 `npm run deploy`。向导会将 D1 绑定到 Worker，部署脚本会在发布前建表并执行后续迁移。
+3. 在向导的 **Secrets** 栏填入下面两个独立的值并妥善保存，然后点击部署。游戏账号在部署后扫码绑定。
+4. 打开部署成功页给出的 Worker 地址，用 `ADMIN_PASSWORD` 登录。点击「扫码添加账号」，用森空岛 App 扫码并确认。看到自己的角色后，可点「立即签到」查看结果。
 
-## 部署到 Cloudflare
+| Secret | 填写方法 |
+| --- | --- |
+| `ADMIN_PASSWORD` | 用密码管理器生成管理员密码，建议 32 个随机字符，支持 24–256 个字符。 |
+| `ENCRYPTION_KEY` | 用支持自定义字符集的密码生成器，字符集填 `0123456789abcdef`，长度设为 **64**。也可在本机运行 `openssl rand -hex 32`。它用于加密保存凭证，升级时请沿用原值。 |
+
+默认每天北京时间 **07:00** 开始签到。可在「定时设置」修改时间，关闭面板后仍会执行。授权到期时，用同一森空岛账号重新扫码即可保留备注和历史记录。[Cloudflare 官方部署按钮说明](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
+
+## 命令行部署
 
 需要 Cloudflare 账号、Node.js 22.18+（22 系列）或 24.12+，以及 npm。以下命令从项目根目录运行。
 
@@ -85,10 +95,10 @@ D1 中的推送凭证使用 Worker Secret 加密。推送是否被服务商受�
 - D1 保存账号角色、签到记录和使用 AES-256-GCM 加密的通行证凭证。密钥由 Worker Secret 提供。账号被移除后，其凭证和面板记录也会从当前 D1 数据中删除。面板显示最新 30 次结果，记录在约 30 天后清理。
 - 扫码和签到使用社区项目已采用的客户端接口。Cloudflare 出口、鹰角接口和账号具体状态会影响实际结果，请部署后用自己的账号完成首次扫码，并在面板确认一次手动签到。
 
-## 来源
+## 来源与许可
 
 - 感谢 **YueHen14/skyland-auto-sign** 的维护者和贡献者。该 Python 实现整理了两款游戏的角色解析、签到请求、奖励解析，并提供 Server 酱³、PushPlus 和 Qmsg 的实现参考。[上游参考版本](https://github.com/YueHen14/skyland-auto-sign/tree/b0358f15806cd24f17253796a2826789f309a6f0) · [贡献者](https://github.com/YueHen14/skyland-auto-sign/graphs/contributors)
-- 上游仓库介绍注明源自 **FancyCabbage/skyland-auto-sign**。本仓库保留上游 MIT 许可全文及原署名 **Copyright (c) 2023 xxyz30**。[Gitee 项目](https://gitee.com/FancyCabbage/skyland-auto-sign) · [许可证](LICENSE)
+- 上游仓库介绍注明源自 **FancyCabbage/skyland-auto-sign**。本仓库保留上游 MIT 许可全文及原署名 **Copyright (c) 2023 xxyz30**。[Gitee 项目](https://gitee.com/FancyCabbage/skyland-auto-sign) · [许可证](LICENSE) · [第三方依赖声明](frontend/public/THIRD-PARTY-NOTICES.txt)
 - **ikexing-cn/skland-bot** 的资料提供了扫码授权流程参考。**xiaoyulejia/skyland-auto-sign-CFworker** 提供了 Workers 部署参考。各参考项目的许可应以各自仓库为准。[扫码项目](https://github.com/ikexing-cn/skland-bot) · [Workers 参考项目](https://github.com/xiaoyulejia/skyland-auto-sign-CFworker)
 - 本仓库的适配工作包括 Workers 和 D1 存储、Vue 管理面板、可配置的定时与九个推送渠道、动态验证码登录和集成测试。
 

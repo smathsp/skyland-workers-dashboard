@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "npm run build && wrangler dev",
     "check": "node --check src/index.js && node --check src/skland.js && node --check src/security.js && node --check src/notifications.js && node --check src/notification-providers.js && node --check src/schedule.js && node --check src/totp.js && node --check src/admin-auth.js && npm run build",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "node scripts/deploy.mjs",
     "build": "vite build",
     "test": "node --test tests/*.test.js"
   },
@@ -25,5 +25,19 @@
     "vite": "8.3.8",
     "wrangler": "4.168.0",
     "miniflare": "5.20261123.1-beta"
+  },
+  "license": "MIT",
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "创建一个新的 D1 数据库，保存你自己的账号、角色、签到记录和设置。"
+      },
+      "ADMIN_PASSWORD": {
+        "description": "首次登录用的管理员密码。用密码管理器生成并保存一组独立的随机密码，建议 32 个字符。"
+      },
+      "ENCRYPTION_KEY": {
+        "description": "生成并备份 64 个十六进制字符（0–9、a–f）。可在本机运行 `openssl rand -hex 32`。更新部署时请沿用原值。"
+      }
+    }
   }
 }
