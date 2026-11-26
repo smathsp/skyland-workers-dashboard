@@ -4,6 +4,10 @@
 
 面板支持使用 Bitwarden 动态验证码登录。森空岛账号的授权在官方 App 内完成。授权到期时，使用同一个森空岛账号重新扫码即可更新原账号，继续使用已有备注和记录。
 
+## 可分享的一键部署模板
+
+用于公开分享的版本使用虚构角色演示签到，保留动态验证码、D1、定时和推送。部署按钮和完整教程见[公开模板 README](https://github.com/smathsp/skyland-workers-template#readme)。本私有版本涉及真实账号接入，使用时请核对适用的平台协议和授权范围。[森空岛使用许可及服务协议](https://assets.skland.com/protocols/agreement.html)
+
 ## 部署到 Cloudflare
 
 需要 Cloudflare 账号、Node.js 22.18+（22 系列）或 24.12+，以及 npm。以下命令从项目根目录运行。
@@ -81,7 +85,10 @@ D1 中的推送凭证使用 Worker Secret 加密。推送是否被服务商受�
 
 ## 来源
 
-签到 API 和两款游戏的角色解析方式来自 [YueHen14/skyland-auto-sign](https://github.com/YueHen14/skyland-auto-sign) 的 Python 实现。扫码流程参考 [ikexing-cn/skland-bot](https://github.com/ikexing-cn/skland-bot)。项目保留上游 MIT 许可。
+- 感谢 **YueHen14/skyland-auto-sign** 的维护者和贡献者。该 Python 实现整理了两款游戏的角色解析、签到请求、奖励解析，并提供 Server 酱³、PushPlus 和 Qmsg 的实现参考。[上游参考版本](https://github.com/YueHen14/skyland-auto-sign/tree/b0358f15806cd24f17253796a2826789f309a6f0) · [贡献者](https://github.com/YueHen14/skyland-auto-sign/graphs/contributors)
+- 上游仓库介绍注明源自 **FancyCabbage/skyland-auto-sign**。本仓库保留上游 MIT 许可全文及原署名 **Copyright (c) 2023 xxyz30**。[Gitee 项目](https://gitee.com/FancyCabbage/skyland-auto-sign) · [许可证](LICENSE)
+- **ikexing-cn/skland-bot** 的资料提供了扫码授权流程参考。**xiaoyulejia/skyland-auto-sign-CFworker** 提供了 Workers 部署参考。各参考项目的许可应以各自仓库为准。[扫码项目](https://github.com/ikexing-cn/skland-bot) · [Workers 参考项目](https://github.com/xiaoyulejia/skyland-auto-sign-CFworker)
+- 本仓库的适配工作包括 Workers 和 D1 存储、Vue 管理面板、可配置的定时与九个推送渠道、Bitwarden 动态验证码和集成测试。
 
 - [Cloudflare Workers Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
 - [Cloudflare D1 Worker API](https://developers.cloudflare.com/d1/worker-api/)
